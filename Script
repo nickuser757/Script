@@ -1,0 +1,143 @@
+--[[
+	NARA WALL v1.5 - ANTI-MINI WALL
+	- FILTRO: Ignora obstáculos baixos automaticamente.
+	- SMART SCAN: Só ativa o Wall Hop se a parede for mais alta que o jogador.
+	- RGB & BYPASS: Mantidos e centralizados.
+]]
+
+local ACtable = {
+    game:GetService("Players").LocalPlayer.PlayerScripts:FindFirstChild("QuitsAntiCheatChecker"),
+    game:GetService("Players").LocalPlayer.PlayerScripts:FindFirstChild("QuitsAntiCheatLocal"),
+}
+for _, v in pairs(ACtable) do if v then v:Destroy() end end
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local pGui = player:WaitForChild("PlayerGui")
+
+local WallHopEnabled = false
+local lastJump = 0
+
+local NARA_SETTINGS = {
+    JumpHeight = 36,
+    ScanRadius = 3.5,
+    FlickAngle = 45,
+    RecoverySpeed = 0.15
+}
+
+-------------------------------------------------------------------------
+-- DETECÇÃO COM FILTRO DE ALTURA
+-------------------------------------------------------------------------
+local function GetSmartWall()
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {char}
+
+    for i = 1, 12 do
+        local angle = math.rad(i * 30)
+        local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+        
+        -- 1. Checa se tem parede na altura do PEITO/CABEÇA (Paredes Altas)
+        local highRay = workspace:Raycast(root.Position + Vector3.new(0, 1.5, 0), direction * NARA_SETTINGS.ScanRadius, params)
+        
+        -- 2. Checa se tem algo nos PÉS (Obstáculo Baixo)
+        local lowRay = workspace:Raycast(root.Position - Vector3.new(0, 1.5, 0), direction * NARA_SETTINGS.ScanRadius, params)
+
+        -- SÓ FAZ O WALL HOP SE A PAREDE FOR ALTA
+        -- Se detectar algo em cima (highRay), ele executa. 
+        -- Se detectar só embaixo (lowRay) e nada em cima, ele ignora.
+        if highRay and highRay.Instance and highRay.Instance.CanCollide then
+            local dot = root.CFrame.RightVector:Dot(direction)
+            local side = (dot > 0) and "R" or "L"
+            return highRay.Normal, side
+        end
+    end
+    return nil
+end
+
+local function applyNaraFlick(root, side)
+    local angle = math.rad(NARA_SETTINGS.FlickAngle)
+    if side == "R" then angle = -angle end
+    root.CFrame = root.CFrame * CFrame.Angles(0, angle, 0)
+    
+    task.spawn(function()
+        task.wait(0.05)
+        local start = tick()
+        while tick() - start < NARA_SETTINGS.RecoverySpeed do
+            local t = (tick() - start) / NARA_SETTINGS.RecoverySpeed
+            local look = workspace.CurrentCamera.CFrame.LookVector
+            local targetRotation = CFrame.new(root.Position, root.Position + Vector3.new(look.X, 0, look.Z))
+            root.CFrame = root.CFrame:Lerp(targetRotation, t)
+            RunService.RenderStepped:Wait()
+        end
+    end)
+end
+
+-------------------------------------------------------------------------
+-- UI NARA WALL (RGB CENTRAL)
+-------------------------------------------------------------------------
+local function BuildUI()
+    if pGui:FindFirstChild("NaraWall") then pGui.NaraWall:Destroy() end
+    local sg = Instance.new("ScreenGui", pGui); sg.Name = "GulosoHub"; sg.ResetOnSpawn = false
+    local main = Instance.new("Frame", sg)
+    main.Size = UDim2.new(0, 160, 0, 90); main.Position = UDim2.new(0.5, -80, 0.5, -45)
+    main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); main.Active = true; main.Draggable = true
+    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+    local stroke = Instance.new("UIStroke", main); stroke.Thickness = 2
+    local title = Instance.new("TextLabel", main); title.Size = UDim2.new(1, 0, 0, 35); title.Text = "GULOSO HUB"
+    title.Font = "GothamBlack"; title.TextSize = 16; title.BackgroundTransparency = 1
+
+    task.spawn(function()
+    while task.wait() do
+        -- Isso aqui faz o cálculo do arco-íris
+        local hue = tick() % 4 / 4
+        local color = Color3.fromHSV(hue, 1, 1)
+
+        -- 1. O Título continua colorido (RGB)
+        title.TextColor3 = color 
+
+        -- 2. AQUI você coloca o Azul (Substituímos o "color" pelos números)
+        stroke.Color = Color3.fromRGB(0, 162, 255) 
+    end
+end)
+
+
+    local toggle = Instance.new("TextButton", main)
+    toggle.Size = UDim2.new(0.85, 0, 0, 35); toggle.Position = UDim2.new(0.075, 0, 0.45, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(0, 0, 255); toggle.Text = "OFF"; toggle.TextColor3 = Color3.new(1, 1, 1)
+    toggle.Font = "GothamBold"; toggle.TextSize = 12; Instance.new("UICorner", toggle)
+
+    toggle.MouseButton1Click:Connect(function()
+        WallHopEnabled = not WallHopEnabled
+        toggle.Text = WallHopEnabled and "ON" or "OFF"
+    end)
+end
+
+-------------------------------------------------------------------------
+-- EXECUÇÃO
+-------------------------------------------------------------------------
+UserInputService.JumpRequest:Connect(function()
+    if not WallHopEnabled then return end
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if root and hum and (tick() - lastJump > 0.15) then
+        local normal, side = GetSmartWall()
+        if normal then 
+            lastJump = tick()
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            root.Velocity = Vector3.new(root.Velocity.X, NARA_SETTINGS.JumpHeight, root.Velocity.Z)
+            applyNaraFlick(root, side)
+        end
+    end
+end)
+
+BuildUI()
