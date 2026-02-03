@@ -207,7 +207,6 @@ local Window = ServerUi:MakeWindow({
         ClearTextOnFocus = true
     },
     KeySystem = true,
-    local KeyDoLootLabs = "Guloso2013" 
     KeySettings = {
         Title = "🔐 Key System",
         Subtitle = "Digite sua chave para continuar",
@@ -220,7 +219,7 @@ local Window = ServerUi:MakeWindow({
         Note = "Pegue a key clicando no icone de chave na direita!",
         FileName = "MinhaKey.txt",
         SaveKey = false,
-        Key = {" KeyDoLootLabs","Guloso2013", "444Dokidoki"},
+        Key = {"Guloso2013", "444Dokidoki"},
         Getfromsite = "https://link-hub.net/3208482/GzkdkBHvvPs4",
         UseServerKey = true,
         ServerKey = "meu-token",
