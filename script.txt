@@ -180,17 +180,31 @@ end
 Player.CharacterAdded:Connect(MonitorarPersonagem)
 
 -- ==============================
+-- Configurações de Cargo
+local Player = game.Players.LocalPlayer
+-- Criamos uma lista base com os seus Vips fixos
+local MeusVips = {11223344, "iniciandoemjogos3", "NomeDoMeuAmigo"}
+
+-- LÓGICA DE VALIDAÇÃO:
+-- Verificamos se a chave digitada foi a secreta para VIP.
+-- Nota: 'KeySettings.Textbox' geralmente armazena o valor que o player digitou.
+if KeySettings.Textbox == "444Dokidoki" then
+    table.insert(MeusVips, Player.Name)
+    table.insert(MeusVips, Player.UserId)
+end
+
 -- Configuração de cargos
 ServerUi:MakeRoles({
     VIP = {
-        Color = "#FFFF00",
-        Users = {11223344, "iniciandoemjogos3", "NomeDoMeuAmigo"}
+        Color = "#FFFFFF", -- Branco
+        Users = MeusVips   -- Usa a lista que criamos acima
     },
     User = {
-        Color = "#00FF00",
+        Color = "#FFFFFF",
         Users = "everyone"
     }
 })
+
 
 -- Criação da janela principal
 local Window = ServerUi:MakeWindow({
@@ -218,8 +232,8 @@ local Window = ServerUi:MakeWindow({
         KeyButton = "https://link-hub.net/3208482/GzkdkBHvvPs4",
         Note = "Pegue a key clicando no icone de chave na direita!",
         FileName = "MinhaKey.txt",
-        SaveKey = false,
-        Key = {"Guloso2013"},
+        SaveKey = true,
+        Key = {"Guloso2013", "444Dokidoki"},
         Getfromsite = "https://link-hub.net/3208482/GzkdkBHvvPs4",
         UseServerKey = true,
         ServerKey = "meu-token",
