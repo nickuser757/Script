@@ -546,6 +546,42 @@ Tab5:AddToggle({
     end
 })
 
+Tab5:AddButton({
+    Name = "Ativar Anti AFK",
+    Callback = function()
+        local VirtualUser = game:GetService("VirtualUser")
+        local LocalPlayer = game.Players.LocalPlayer
+        
+        -- Conecta ao evento Idled para evitar o kick por inatividade
+        LocalPlayer.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+        
+        -- Loop secundário para garantir que o personagem não fique estático
+        task.spawn(function()
+            while true do
+                task.wait(300) -- Executa a cada 5 minutos
+                if LocalPlayer.Character then
+                    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        -- Movimento nulo apenas para resetar o timer do servidor
+                        humanoid:Move(Vector3.new(0, 0, 0))
+                    end
+                end
+            end
+        end)
+        
+        -- Notificação visual de que funcionou
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Anti AFK";
+            Text = "O Anti AFK foi ativado com sucesso!";
+            Duration = 5;
+        })
+        
+        print("Anti AFK Habilitado!")
+    end
+})
 
 -- // SEU TOGGLE CONFIGURADO // --
 Tab:AddToggle({
